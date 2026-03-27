@@ -4,9 +4,18 @@ import openai
 
 st.set_page_config(page_title="全球内容本地化助手", page_icon="🌐")
 
+# --- 自动获取密钥逻辑 ---
+# 优先从 Secrets 获取，如果没有（比如本地运行），再看侧边栏输入
+api_key_from_secrets = st.secrets.get("DEEPSEEK_API_KEY")
+
 with st.sidebar:
     st.title("⚙️ 配置中心")
-    api_key = st.text_input("输入 DeepSeek API Key:", type="password")
+    if api_key_from_secrets:
+        st.success("✅ API Key 已从后台自动加载")
+        api_key = api_key_from_secrets
+    else:
+        api_key = st.text_input("手动输入 DeepSeek API Key:", type="password")
+    
     target_platform = st.selectbox("目标平台", ["小红书 (爆款图文)", "抖音 (短视频脚本)", "微信公众号 (深度文)", "微博 (即时新闻)"])
 
 st.title("🚀 国外内容一键本地化")
@@ -15,18 +24,16 @@ url = st.text_input("粘贴国外网页链接 (URL):", placeholder="https://www.
 
 if st.button("开始生成"):
     if not api_key:
-        st.warning("请先在左侧输入 API Key")
+        st.warning("请先配置 API Key")
     elif not url:
         st.warning("请输入链接")
     else:
         try:
             with st.spinner("🔍 正在抓取并分析原文..."):
-                # 使用新的抓取工具 trafilatura
                 downloaded = trafilatura.fetch_url(url)
                 content = trafilatura.extract(downloaded)
-                
                 if not content:
-                    st.error("无法抓取该网页内容，请尝试其他链接。")
+                    st.error("无法抓取该网页内容。")
                     st.stop()
 
             with st.spinner("✍️ AI 正在创作本地化内容..."):
